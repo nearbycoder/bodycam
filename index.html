@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101210">
+  <meta name="description" content="Play Bodycam — Operation Blackout, a free single-player browser shooter. Explore four floors of a derelict industrial annex and track fourteen rogue drones through a body-camera lens.">
+  <meta property="og:title" content="Bodycam — Operation Blackout">
+  <meta property="og:description" content="Four floors. Fourteen rogue drones. Play the single-player body-camera shooter in your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nearbycoder.github.io/bodycam/">
+  <meta property="og:image" content="https://nearbycoder.github.io/bodycam/press/social.jpg">
+  <meta property="og:image:alt" content="A first-person view from the industrial annex in Bodycam — Operation Blackout">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>Bodycam — Operation Blackout | Play in your browser</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="./site/fonts/barlow-condensed-latin-800-normal.woff2">
+  <link rel="stylesheet" href="./site/landing.css">
+</head>
+<body id="top">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="masthead">
+    <div class="masthead-inner frame">
+      <a class="brand" href="#top" aria-label="Bodycam home"><span class="brand-mark" aria-hidden="true"><i></i></span><span>BODYCAM</span></a>
+      <button class="nav-toggle" type="button" aria-label="Open navigation" aria-controls="main-links" aria-expanded="false" hidden><i></i></button>
+      <nav class="top-links" id="main-links" aria-label="Main navigation"><a href="#operation">Operation</a><a href="#facility">Facility</a><a href="#manual">Field manual</a></nav>
+      <a class="btn btn-header" href="./play/"><span class="triangle" aria-hidden="true"></span>Play now</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <img class="hero-image" src="./press/hero.webp" alt="" fetchpriority="high" width="1600" height="900">
+      <video class="hero-video" id="hero-video" muted loop playsinline preload="none" aria-hidden="true" data-file="./press/hero.mp4"></video>
+      <div class="hero-shade"></div>
+      <div class="hero-inner frame">
+        <div class="hero-top hud" aria-hidden="true"><span class="rec"><i></i> REC</span><span class="cam-id">UNIT 4417 <b>/</b> CAM 02</span></div>
+        <div class="hero-content">
+          <p class="hero-kicker"><span></span> First-person browser shooter</p>
+          <h1 id="hero-title">BODYCAM<span>Operation Blackout</span></h1>
+          <p class="hero-summary">Step into a derelict industrial annex through the lens of a body camera. Four floors of rogue drones stand between you and an all-clear.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="./play/"><span class="triangle" aria-hidden="true"></span>Play in browser</a>
+            <a class="footage-link" href="./press/briefing.mp4" data-footage="Operation footage"><span class="watch-icon" aria-hidden="true"></span>Watch footage</a>
+          </div>
+        </div>
+        <div class="hero-bottom hud"><span class="capture-label"><i class="signal" aria-hidden="true"></i> In-engine capture</span><button class="motion-toggle hud" id="motion-toggle" type="button" hidden aria-controls="hero-video"><span class="motion-symbol" aria-hidden="true">Ⅱ</span><span class="motion-label">Pause feed</span></button></div>
+      </div>
+    </section>
+
+    <div class="stat-bar"><dl class="stats frame">
+      <div><dt>Facility levels</dt><dd>04</dd></div>
+      <div><dt>Hostile drones</dt><dd>14</dd></div>
+      <div><dt>Loadouts</dt><dd>02</dd></div>
+      <div><dt>Max textures</dt><dd>4K</dd></div>
+    </dl></div>
+
+    <section class="operation section frame" id="operation" aria-labelledby="operation-title">
+      <div class="brief-copy">
+        <p class="eyebrow">Mission briefing</p>
+        <h2 id="operation-title">Clear the annex.</h2>
+        <p class="lead">The inspection drones have turned hostile. Locate and disable all fourteen in a single-player operation that stretches from the pump room to the roof.</p>
+        <dl class="brief-list">
+          <div><dt>Track</dt><dd>Scan for a drone. The floor plan draws a route through doors and up the stairs to its signal.</dd></div>
+          <div><dt>Engage</dt><dd>An amber flash signals incoming fire. Break line of sight or move clear of the energy orb.</dd></div>
+          <div><dt>Recover</dt><dd>Armor recharges between encounters. If your camera goes offline, redeploy with cleared drones still down.</dd></div>
+        </dl>
+      </div>
+      <figure class="field-frame drone-still">
+        <img src="./press/drone.webp" alt="An industrial quadrotor hovering inside the window-lit intake corridor" loading="lazy" width="1100" height="780">
+        <span class="frame-corner corner-tl"></span><span class="frame-corner corner-br"></span>
+        <figcaption><span class="image-tag"><i></i> Target ID</span><strong>Inspection drone</strong></figcaption>
+      </figure>
+    </section>
+
+    <section class="facility section" id="facility" aria-labelledby="facility-title">
+      <div class="frame">
+        <div class="section-heading">
+          <div><p class="eyebrow">Facility index</p><h2 id="facility-title">Explore the annex.</h2></div>
+          <p>Two switchback stairwells connect four playable levels. Select a floor to see inside.</p>
+        </div>
+        <div class="floor-tabs tab-strip" role="tablist" aria-label="Facility levels" data-tabs>
+          <button id="tab-basement" type="button" role="tab" aria-selected="false" aria-controls="panel-basement" tabindex="-1"><span>B1</span> Basement</button>
+          <button id="tab-works" type="button" role="tab" aria-selected="true" aria-controls="panel-works"><span>G</span> Works floor</button>
+          <button id="tab-records" type="button" role="tab" aria-selected="false" aria-controls="panel-records" tabindex="-1"><span>01</span> Records</button>
+          <button id="tab-roof" type="button" role="tab" aria-selected="false" aria-controls="panel-roof" tabindex="-1"><span>02</span> Roof plant</button>
+        </div>
+        <figure class="floor-panel" id="panel-basement" role="tabpanel" aria-labelledby="tab-basement" tabindex="0" hidden>
+          <img src="./press/basement.webp" alt="Pressure vessels and industrial gauges beneath a fluorescent strip in the basement" width="1600" height="900" loading="lazy">
+          <figcaption><span class="image-tag"><i></i> Deck B1</span><h3>Utility basement</h3><p>Pressure vessels, gauges, and switchboards crowd the pump room. Follow the service gallery into the boiler room and valve shop.</p></figcaption>
+        </figure>
+        <figure class="floor-panel" id="panel-works" role="tabpanel" aria-labelledby="tab-works" tabindex="0">
+          <img src="./press/works.webp" alt="A red coupe parked under the windows of the motor bay" width="1600" height="900" loading="lazy">
+          <figcaption><span class="image-tag"><i></i> Ground floor</span><h3>Works gallery</h3><p>The intake corridor opens onto dispatch, switchgear, and a motor bay. Window light catches the parked coupe’s layered paint and the wet concrete.</p></figcaption>
+        </figure>
+        <figure class="floor-panel" id="panel-records" role="tabpanel" aria-labelledby="tab-records" tabindex="0" hidden>
+          <img src="./press/records.webp" alt="Labeled archive boxes arranged on steel shelving in the records gallery" width="1600" height="900" loading="lazy">
+          <figcaption><span class="image-tag"><i></i> Deck 01</span><h3>Records gallery</h3><p>Move between racks of archive boxes, document intake, and the survey office. A link gallery leads back to the west stairs.</p></figcaption>
+        </figure>
+        <figure class="floor-panel" id="panel-roof" role="tabpanel" aria-labelledby="tab-roof" tabindex="0" hidden>
+          <img src="./press/roof.webp" alt="Ventilation equipment and pipes spread across the annex roof under an overcast sky" width="1600" height="900" loading="lazy">
+          <figcaption><span class="image-tag"><i></i> Deck 02</span><h3>Roof plant</h3><p>Step into daylight among condenser banks, pipe runs, and an aerial mast. Cloudy sky reflects in the rain-darkened roof.</p></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="systems section frame" aria-labelledby="systems-title">
+      <div>
+        <p class="eyebrow">Equipment &amp; optics</p>
+        <h2 id="systems-title">On camera.</h2>
+        <div class="systems-list">
+          <details name="systems" open><summary>Two distinct loadouts</summary><p>Switch between the service pistol and compact carbine. Each has its own recoil, draw, and reload timing. Watch the hand, magazine, and weapon move independently.</p></details>
+          <details name="systems"><summary>Body-camera optics</summary><p>A wide lens, camera sway, and exposure shifts turn a walk from the stairwell into daylight into a change you can feel on screen.</p></details>
+          <details name="systems"><summary>512 px to 4K textures</summary><p>Choose from four resolutions in Graphics. Scanned concrete, roof bitumen, and worn metal respond to the light. Wet floors reflect the room at 1K and above.</p></details>
+          <details name="systems"><summary>Camera archive</summary><p>Open Camera archive from the game menu to watch the source footage or follow the reconstructed corridor walk inside the engine.</p></details>
+        </div>
+      </div>
+      <a class="field-frame handling-still" href="./press/handling.mp4" data-footage="Weapon handling">
+        <img src="./press/handling.webp" alt="" loading="eager" width="1200" height="675">
+        <span class="frame-corner corner-tl"></span><span class="frame-corner corner-br"></span>
+        <span class="frame-play"><span class="round-play" aria-hidden="true"><i class="triangle"></i></span><span><small>In-engine footage</small><strong>Watch the reload</strong></span></span>
+      </a>
+    </section>
+
+    <section class="manual section" id="manual" aria-labelledby="manual-title">
+      <div class="frame manual-grid">
+        <div class="manual-intro">
+          <p class="eyebrow">Field manual</p>
+          <h2 id="manual-title">Take control.</h2>
+          <p class="lead">Play with a keyboard and mouse, an Xbox controller, or the on-screen touch controls.</p>
+          <a class="btn btn-primary" href="./play/"><span class="triangle" aria-hidden="true"></span>Launch game</a>
+          <small class="requirements">Requires a WebGL 2 browser.</small>
+        </div>
+        <div class="control-sheet">
+          <div class="control-tabs tab-strip" role="tablist" aria-label="Control layout" data-tabs>
+            <button type="button" id="tab-keys" role="tab" aria-selected="true" aria-controls="panel-keys">Keyboard</button>
+            <button type="button" id="tab-pad" role="tab" aria-selected="false" aria-controls="panel-pad" tabindex="-1">Xbox</button>
+            <button type="button" id="tab-touch" role="tab" aria-selected="false" aria-controls="panel-touch" tabindex="-1">Touch</button>
+          </div>
+          <div class="control-panel" role="tabpanel" id="panel-keys" aria-labelledby="tab-keys" tabindex="0">
+            <dl><div><dt>Move / look</dt><dd>WASD / Mouse</dd></div><div><dt>Fire / aim</dt><dd>Left / right click</dd></div><div><dt>Reload / swap</dt><dd>R / 1 or 2</dd></div><div><dt>Scan / floor plan</dt><dd>Q / Tab</dd></div><div><dt>Sprint / pause</dt><dd>Shift / Esc</dd></div></dl>
+          </div>
+          <div class="control-panel" role="tabpanel" id="panel-pad" aria-labelledby="tab-pad" tabindex="0" hidden>
+            <dl><div><dt>Connect</dt><dd>Press A in game</dd></div><div><dt>Move / look</dt><dd>Left / right stick</dd></div><div><dt>Fire / aim</dt><dd>RT / LT</dd></div><div><dt>Reload / swap</dt><dd>X / RB</dd></div><div><dt>Scan / floor plan</dt><dd>Y / View</dd></div><div><dt>Sprint / pause</dt><dd>Left stick click / Menu</dd></div></dl>
+          </div>
+          <div class="control-panel" role="tabpanel" id="panel-touch" aria-labelledby="tab-touch" tabindex="0" hidden>
+            <dl><div><dt>Move</dt><dd>Drag on the left</dd></div><div><dt>Look</dt><dd>Drag on the right</dd></div><div><dt>Fire</dt><dd>Hold Fire</dd></div><div><dt>Reload / swap</dt><dd>Tap Reload / Swap</dd></div><div><dt>Scan for a drone</dt><dd>Tap Scan</dd></div></dl>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="frame footer-inner">
+    <a class="brand" href="#top" aria-label="Bodycam home"><span class="brand-mark" aria-hidden="true"><i></i></span><span>BODYCAM</span></a>
+    <span class="footer-title">Operation Blackout</span>
+    <a class="credits-link" href="https://github.com/nearbycoder/bodycam#assets">Credits</a>
+    <a class="source-link" href="https://github.com/nearbycoder/bodycam">Source on GitHub <span aria-hidden="true">↗</span></a>
+  </div></footer>
+
+  <dialog id="footage-dialog" aria-labelledby="footage-title">
+    <div class="dialog-head"><h2 id="footage-title">Operation footage</h2><button id="close-footage" type="button" aria-label="Close footage">Close <span aria-hidden="true">×</span></button></div>
+    <video id="footage-player" controls playsinline preload="none"></video>
+  </dialog>
+  <script type="module" src="./site/landing.js"></script>
+</body>
+</html>

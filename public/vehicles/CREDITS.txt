@@ -1,0 +1,17 @@
+Car Concept
+Model and textures by Eric Chadwick, Copyright 2024 Darmstadt Graphics Group GmbH.
+Based on the original public-domain vehicle design by Unity Fan.
+Licensed under Creative Commons Attribution 4.0 International.
+https://creativecommons.org/licenses/by/4.0/
+https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CarConcept
+
+The game uses an optimized stationary copy with adapted material, illumination and glass settings.
+Khronos and 3D Commerce logos are marks of the Khronos Group. See KHRONOS-MARKS.txt.
+
+Small Workshop environment light by Dimitrios Savva and Jarod Guest, Poly Haven.
+CC0 1.0. https://polyhaven.com/a/small_workshop
+
+The optimized mesh references 13 external maps through the texture-quality control.
+Native sizes include a 2048×2048 ambient-occlusion atlas, 1024×1024 tire sidewall
+color and normal maps, a 1024×256 dashboard, and 512×128 tread detail. Other native
+maps range from 32 to 512 px. Higher settings preserve each map's source resolution.

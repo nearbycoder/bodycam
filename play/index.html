@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#121511">
+  <title>Play Bodycam — Operation Blackout</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
+</head>
+<body>
+<main id="feed" data-screen="home">
+  <canvas id="view" tabindex="-1" aria-label="Bodycam first-person arcade shooter"></canvas>
+  <video id="film" src="/art/reference.mp4" preload="none" playsinline hidden></video>
+  <div id="shade" aria-hidden="true"></div>
+  <div id="header">
+    <div class="callsign"><i class="insignia" aria-hidden="true"></i><b>UNIT 4417</b><i class="slash">/</i><span id="channel">FIELD CAMERA</span></div>
+    <div class="rec"><i></i> REC <span class="rec-divider"></span> CAM 02</div>
+  </div>
+  <section id="menu" aria-labelledby="title">
+    <div class="menu-copy"><div id="eyebrow"></div><h1 id="title">BODYCAM</h1><p id="subtitle"></p></div>
+    <div id="manual" hidden></div>
+    <div id="graphics" hidden>
+      <div class="quality-title"><label for="texture-quality">Texture resolution</label><output for="texture-quality" id="quality-value">1K</output></div>
+      <input id="texture-quality" type="range" min="0" max="3" step="1" value="1" aria-valuetext="1024 pixels">
+      <div class="quality-ticks" aria-hidden="true"><span>512</span><span>1K</span><span>2K</span><span>4K</span></div>
+      <p id="quality-status" aria-live="polite"></p>
+    </div>
+    <nav id="actions" aria-label="Game options"></nav>
+    <div id="menu-input" class="micro"></div>
+  </section>
+  <div id="hud" hidden>
+    <div id="mission"><div class="micro">CONTAINMENT</div><b><span id="remaining"></span> <small>DRONES ACTIVE</small></b></div>
+    <div id="cross"><i></i><i></i></div><div id="hitmark">×</div>
+    <div id="tracker" hidden><i>◆</i><span></span></div>
+    <div id="play-hint" class="micro"></div>
+    <div id="vitals"><div class="micro">ARMOR</div><div id="shield"><b></b></div><strong id="shield-value"></strong></div>
+    <div id="cell"><div id="weapon-name" class="micro">SERVICE PISTOL</div><b id="ammo"></b> <span id="capacity"></span><div id="charge"></div></div>
+    <button id="pause" aria-label="Pause game">Ⅱ</button>
+    <div id="touch" hidden><button id="touch-scan">Scan</button><button id="touch-charge">Reload</button><button id="touch-weapon">Swap</button><button id="touch-fire">Fire</button></div>
+  </div>
+  <section id="map-panel" hidden aria-label="Facility floor plan">
+    <div class="micro">ANNEX / FLOOR PLAN</div>
+    <h2 id="deck-name"></h2>
+    <canvas id="floor-plan" aria-label="Walkable floor area, operator, drone signals and route"></canvas>
+    <div class="map-legend"><span>▲ You</span><span>◆ Drones</span><span>┄ Route</span></div>
+    <div class="map-actions"><button id="prev-deck">‹ Floor</button><button id="next-deck">Floor ›</button><button id="map-close">Close</button></div>
+    <p id="map-help" class="micro"></p>
+  </section>
+  <div id="archive-bar" hidden><button id="archive-back">‹ Return to archive</button><time id="time"></time></div>
+  <div id="loading" role="status">INITIALIZING CAMERA</div>
+</main>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

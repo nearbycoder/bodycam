@@ -1,0 +1,18 @@
+{
+  "name": "bodycam",
+  "version": "1.0.0",
+  "description": "A walkable Three.js reconstruction of the supplied body-camera footage.",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8"
+  }
+}
