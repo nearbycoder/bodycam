@@ -91,52 +91,52 @@ export function makeImpactEffects(parent){
   function shot(from,to,heading,weapon){
     const flash=slot(flashes);
     flash.mesh.position.copy(from).addScaledVector(heading,.048);
-    flash.mesh.material.rotation=Math.random()*Math.PI*2;flash.mesh.material.opacity=.88;
-    flash.mesh.scale.setScalar((weapon==='carbine'?.21:.15)*(.8+Math.random()*.4));
-    flash.mesh.visible=true;flash.life=.036;
-    direction.copy(heading).multiplyScalar(.34);
-    direction.y+=.24;
-    puff(flash.mesh.position,direction,.095,.38,.26);
+    flash.mesh.material.rotation=Math.random()*Math.PI*2;flash.mesh.material.opacity=.96;
+    flash.mesh.scale.setScalar((weapon==='carbine'?.25:.18)*(.82+Math.random()*.4));
+    flash.mesh.visible=true;flash.life=.042;
+    direction.copy(heading).multiplyScalar(.42);
+    direction.y+=.28;
+    puff(flash.mesh.position,direction,weapon==='carbine'?.14:.11,.56,.34);
 
     // A fleeting streak appears over a short part of the shot. The full sightline
     // stays clear so a long corridor does not fill with bright lines.
     const length=from.distanceTo(to);
     if(length<1.5)return;
     const trail=slot(trails);
-    const segment=Math.min(1.25,length*.17),along=length*(.3+Math.random()*.36);
+    const segment=Math.min(1.45,length*.19),along=length*(.28+Math.random()*.36);
     direction.subVectors(to,from).normalize();
     trail.mesh.position.copy(from).addScaledVector(direction,along);
     trail.mesh.quaternion.setFromUnitVectors(up,direction);
-    trail.mesh.scale.set(.0065,segment,.0065);
-    trail.mesh.material.opacity=.38;trail.mesh.visible=true;trail.life=.04;
+    trail.mesh.scale.set(.0075,segment,.0075);
+    trail.mesh.material.opacity=.46;trail.mesh.visible=true;trail.life=.044;
   }
 
   function impact(point,normal,kind,scale=1){
     const metal=kind==='metal';
-    const dustVelocity=direction.copy(normal).multiplyScalar(.23);
-    dustVelocity.y+=.18;
-    puff(point,dustVelocity,scale*(metal?.15:.32),metal?.26:.62,metal?.22:.57);
-    const count=Math.round(scale*(metal?12:8));
+    const dustVelocity=direction.copy(normal).multiplyScalar(.26);
+    dustVelocity.y+=.21;
+    puff(point,dustVelocity,scale*(metal?.19:.40),metal?.34:.85,metal?.28:.68);
+    const count=Math.round(scale*(metal?14:9));
     for(let i=0;i<count;i++){
       const chip=slot(chips);
-      const hot=metal&&i%3===0;
+      const hot=metal&&i%2===0;
       chip.mesh.material=chipMaterials[hot?2:metal?1:0];
       chip.mesh.position.copy(point).addScaledVector(normal,.015);
       chip.mesh.rotation.set(Math.random()*6,Math.random()*6,Math.random()*6);
-      const radius=(hot?.006:.016)*(Math.random()+.48)*scale;
-      chip.mesh.scale.set(radius,radius*(hot?2.9:.67),radius*.59);
+      const radius=(hot?.0075:.018)*(Math.random()+.48)*scale;
+      chip.mesh.scale.set(radius,radius*(hot?3.4:.67),radius*.59);
       chip.velocity.set(Math.random()-.5,Math.random()-.30,Math.random()-.5).normalize();
       if(chip.velocity.dot(normal)<0)chip.velocity.reflect(normal);
-      chip.velocity.addScaledVector(normal,.28).multiplyScalar((.48+Math.random()*2.1)*scale);
-      chip.life=chip.duration=(hot?.16:.33)+Math.random()*.19;chip.mesh.visible=true;
+      chip.velocity.addScaledVector(normal,.28).multiplyScalar((.55+Math.random()*2.3)*scale);
+      chip.life=chip.duration=(hot?.20:.38)+Math.random()*.21;chip.mesh.visible=true;
     }
     if(kind==='plaster'){
       const mark=slot(marks);
       mark.mesh.position.copy(point).addScaledVector(normal,.007);
       mark.mesh.quaternion.setFromUnitVectors(forward,normal);
       mark.mesh.rotateZ(Math.random()*6.28);
-      mark.mesh.scale.setScalar(.088+Math.random()*.045);
-      mark.mesh.material.opacity=.86;mark.mesh.visible=true;mark.life=22;
+      mark.mesh.scale.setScalar(.10+Math.random()*.052);
+      mark.mesh.material.opacity=.92;mark.mesh.visible=true;mark.life=30;
     }
   }
 

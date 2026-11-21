@@ -4,6 +4,7 @@ const bindings = [
   ['Focus aim','LT','Right click'],
   ['Reload','X','R'],
   ['Switch weapon','RB','1 / 2'],
+  ['Tactical light','LB','F'],
   ['Scan for a drone','Y','Q'],
   ['Sprint','Click left stick','Hold Shift'],
   ['Floor plan','View','Tab'],

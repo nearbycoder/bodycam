@@ -49,6 +49,12 @@ export function cullHiddenActors(scene, proxies) {
     if (!actors) return;
     eye.setFromMatrixPosition(camera.matrixWorld);
     for (const {model,bounds,room} of actors) {
+      // Skip actors whose parent hierarchy is already culled (e.g. distant drones or hidden encounter group).
+      let parentVisible = true;
+      for (let p = model.parent; p; p = p.parent) {
+        if (!p.visible) { parentVisible = false; break; }
+      }
+      if (!parentVisible) continue;
       actorBox.copy(bounds);
       if (room) {
         if (!room.bounds.containsPoint(eye) && !room.portals.some(slab =>
@@ -59,8 +65,15 @@ export function cullHiddenActors(scene, proxies) {
       } else {
         actorBox.applyMatrix4(model.matrixWorld);
       }
+      const rayMinX = Math.min(eye.x, actorBox.min.x), rayMaxX = Math.max(eye.x, actorBox.max.x);
+      const rayMinY = Math.min(eye.y, actorBox.min.y), rayMaxY = Math.max(eye.y, actorBox.max.y);
+      const rayMinZ = Math.min(eye.z, actorBox.min.z), rayMaxZ = Math.max(eye.z, actorBox.max.z);
       let hidden=false;
-      for (const slab of slabs) {
+      for (let i = 0; i < slabs.length; i++) {
+        const slab = slabs[i];
+        if (slab.max.y < rayMinY || slab.min.y > rayMaxY ||
+            slab.max.x < rayMinX || slab.min.x > rayMaxX ||
+            slab.max.z < rayMinZ || slab.min.z > rayMaxZ) continue;
         if (coverage(eye,actorBox,slab)===2) {hidden=true;break;}
       }
       model.visible=!hidden;

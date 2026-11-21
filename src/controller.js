@@ -9,21 +9,46 @@ function stick(axes, offset) {
 }
 
 export function createController() {
-  let selected = null, last = [], lastNav = 0, repeatAt = 0, current;
+  let selected = null, last = [], buttons = [], lastNav = 0, repeatAt = 0, current;
+  const idle = { connected: false, disconnected: false };
+  const input = {
+    connected: true, disconnected: false, x: 0, y: 0, lookX: 0, lookY: 0, navigate: 0,
+    accept: false, back: false, reload: false, scan: false, weapon: false, torch: false, map: false,
+    nextDeck: false, prevDeck: false, pause: false, sprint: false, aim: 0, fire: false, activity: false
+  };
   function sample(now) {
-    let pads;
-    try { pads = Array.from(navigator.getGamepads?.() || []).filter(p => p?.connected); }
-    catch { pads = []; }
-    const pad = pads.find(p => p.index === selected) || pads.find(p => p.mapping === 'standard') || pads[0];
-    const disconnected = selected !== null && !pads.some(p => p.index === selected);
-    if (!pad) {
-      current = null; selected = null; last = []; lastNav = 0;
-      return { connected: false, disconnected };
+    let raw;
+    try { raw = navigator.getGamepads?.(); }
+    catch { raw = null; }
+    let pad = null, selectedAlive = false, standard = null, first = null;
+    if (raw) {
+      for (let i = 0; i < raw.length; i++) {
+        const p = raw[i];
+        if (!p?.connected) continue;
+        if (p.index === selected) { pad = p; selectedAlive = true; break; }
+        if (!standard && p.mapping === 'standard') standard = p;
+        if (!first) first = p;
+      }
+      if (!pad) pad = standard || first;
     }
-    if (pad.index !== selected) { last = []; lastNav = 0; }
+    const disconnected = selected !== null && !selectedAlive;
+    if (!pad) {
+      current = null; selected = null; last.length = 0; lastNav = 0;
+      idle.disconnected = disconnected;
+      return idle;
+    }
+    if (pad.index !== selected) { last.length = 0; lastNav = 0; }
     selected = pad.index;
     current = pad;
-    const buttons = pad.buttons.map(b => b.pressed || b.value > .35);
+    const padButtons = pad.buttons, len = padButtons.length;
+    if (buttons.length !== len) buttons = new Array(len);
+    let anyButton = false;
+    for (let i = 0; i < len; i++) {
+      const b = padButtons[i];
+      const down = b.pressed || b.value > .35;
+      buttons[i] = down;
+      if (down) anyButton = true;
+    }
     const pressed = i => !!buttons[i] && !last[i];
     const [x,y] = stick(pad.axes,0), [lookX,lookY] = stick(pad.axes,2);
     const nav = buttons[12] || y < -.6 ? -1 : buttons[13] || y > .6 ? 1 : 0;
@@ -32,13 +57,18 @@ export function createController() {
       navigate = nav;
       repeatAt = now + (nav === lastNav ? 155 : 385);
     }
-    const input = {
-      connected: true, disconnected, x, y, lookX, lookY, navigate,
-      accept: pressed(0), back: pressed(1), reload: pressed(2), scan: pressed(3),
-      weapon: pressed(5), map: pressed(8), nextDeck: pressed(15)||pressed(5), prevDeck: pressed(14)||pressed(4), pause: pressed(9), sprint: pressed(10), aim: pad.buttons[6]?.value || 0,
-      fire: !!buttons[7], activity: buttons.some(Boolean) || !!(x || y || lookX || lookY)
-    };
-    last = buttons; lastNav = nav;
+    input.disconnected = disconnected;
+    input.x = x; input.y = y; input.lookX = lookX; input.lookY = lookY; input.navigate = navigate;
+    input.accept = pressed(0); input.back = pressed(1); input.reload = pressed(2); input.scan = pressed(3);
+    input.weapon = pressed(5); input.torch = pressed(4); input.map = pressed(8);
+    input.nextDeck = pressed(15) || pressed(5); input.prevDeck = pressed(14) || pressed(4);
+    input.pause = pressed(9); input.sprint = pressed(10);
+    input.aim = padButtons[6]?.value || 0;
+    input.fire = !!buttons[7];
+    input.activity = anyButton || !!(x || y || lookX || lookY);
+    if (last.length !== len) last = new Array(len);
+    for (let i = 0; i < len; i++) last[i] = buttons[i];
+    lastNav = nav;
     return input;
   }
   function vibrate(strong, weak, duration) {

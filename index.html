@@ -34,7 +34,7 @@
       <video class="hero-video" id="hero-video" muted loop playsinline preload="none" aria-hidden="true" data-file="./press/hero.mp4"></video>
       <div class="hero-shade"></div>
       <div class="hero-inner frame">
-        <div class="hero-top hud" aria-hidden="true"><span class="rec"><i></i> REC</span><span class="cam-id">UNIT 4417 <b>/</b> CAM 02</span></div>
+        <div class="hero-top hud" aria-hidden="true"><span class="rec"><i></i> REC <span class="rec-sep"></span> <span id="hero-clock">2026-11-17 14:33:31</span></span><span class="cam-id">UNIT 4417 <b>/</b> AXON-02</span></div>
         <div class="hero-content">
           <p class="hero-kicker"><span></span> First-person browser shooter</p>
           <h1 id="hero-title">BODYCAM<span>Operation Blackout</span></h1>
@@ -87,7 +87,7 @@
         </div>
         <figure class="floor-panel" id="panel-basement" role="tabpanel" aria-labelledby="tab-basement" tabindex="0" hidden>
           <img src="./press/basement.webp" alt="Pressure vessels and industrial gauges beneath a fluorescent strip in the basement" width="1600" height="900" loading="lazy">
-          <figcaption><span class="image-tag"><i></i> Deck B1</span><h3>Utility basement</h3><p>Pressure vessels, gauges, and switchboards crowd the pump room. Follow the service gallery into the boiler room and valve shop.</p></figcaption>
+          <figcaption><span class="image-tag"><i></i> Deck B1</span><h3>Utility basement</h3><p>Flickering fluorescents, pressure vessels, and switchboards crowd the dark pump room. Sweep the boiler room and valve shop with your tactical LED.</p></figcaption>
         </figure>
         <figure class="floor-panel" id="panel-works" role="tabpanel" aria-labelledby="tab-works" tabindex="0">
           <img src="./press/works.webp" alt="A red coupe parked under the windows of the motor bay" width="1600" height="900" loading="lazy">
@@ -110,8 +110,8 @@
         <h2 id="systems-title">On camera.</h2>
         <div class="systems-list">
           <details name="systems" open><summary>Two distinct loadouts</summary><p>Switch between the service pistol and compact carbine. Each has its own recoil, draw, and reload timing. Watch the hand, magazine, and weapon move independently.</p></details>
-          <details name="systems"><summary>Body-camera optics</summary><p>A wide lens, camera sway, and exposure shifts turn a walk from the stairwell into daylight into a change you can feel on screen.</p></details>
-          <details name="systems"><summary>512 px to 4K textures</summary><p>Choose from four resolutions in Graphics. Scanned concrete, roof bitumen, and worn metal respond to the light. Wet floors reflect the room at 1K and above.</p></details>
+          <details name="systems"><summary>Body-camera optics &amp; mic</summary><p>Steep wide-angle distortion, backlit glass grime, rolling-shutter shear, high-ISO shadow grain, auto-exposure ducking, and compressed chest-mic audio turn every heel-strike and gunshot into raw field footage. Toggle the tactical LED in dark rooms.</p></details>
+          <details name="systems"><summary>512 px to 4K textures</summary><p>Choose from four resolutions in Graphics. Scanned concrete, roof bitumen, and worn metal render with pooled area lights, per-floor culling, and wet-floor reflections at 1K and above.</p></details>
           <details name="systems"><summary>Camera archive</summary><p>Open Camera archive from the game menu to watch the source footage or follow the reconstructed corridor walk inside the engine.</p></details>
         </div>
       </div>
@@ -138,10 +138,10 @@
             <button type="button" id="tab-touch" role="tab" aria-selected="false" aria-controls="panel-touch" tabindex="-1">Touch</button>
           </div>
           <div class="control-panel" role="tabpanel" id="panel-keys" aria-labelledby="tab-keys" tabindex="0">
-            <dl><div><dt>Move / look</dt><dd>WASD / Mouse</dd></div><div><dt>Fire / aim</dt><dd>Left / right click</dd></div><div><dt>Reload / swap</dt><dd>R / 1 or 2</dd></div><div><dt>Scan / floor plan</dt><dd>Q / Tab</dd></div><div><dt>Sprint / pause</dt><dd>Shift / Esc</dd></div></dl>
+            <dl><div><dt>Move / look</dt><dd>WASD / Mouse</dd></div><div><dt>Fire / aim</dt><dd>Left / right click</dd></div><div><dt>Reload / swap</dt><dd>R / 1 or 2</dd></div><div><dt>Tactical light</dt><dd>F</dd></div><div><dt>Scan / floor plan</dt><dd>Q / Tab</dd></div><div><dt>Sprint / pause</dt><dd>Shift / Esc</dd></div></dl>
           </div>
           <div class="control-panel" role="tabpanel" id="panel-pad" aria-labelledby="tab-pad" tabindex="0" hidden>
-            <dl><div><dt>Connect</dt><dd>Press A in game</dd></div><div><dt>Move / look</dt><dd>Left / right stick</dd></div><div><dt>Fire / aim</dt><dd>RT / LT</dd></div><div><dt>Reload / swap</dt><dd>X / RB</dd></div><div><dt>Scan / floor plan</dt><dd>Y / View</dd></div><div><dt>Sprint / pause</dt><dd>Left stick click / Menu</dd></div></dl>
+            <dl><div><dt>Connect</dt><dd>Press A in game</dd></div><div><dt>Move / look</dt><dd>Left / right stick</dd></div><div><dt>Fire / aim</dt><dd>RT / LT</dd></div><div><dt>Reload / swap</dt><dd>X / RB</dd></div><div><dt>Tactical light</dt><dd>LB</dd></div><div><dt>Scan / floor plan</dt><dd>Y / View</dd></div><div><dt>Sprint / pause</dt><dd>Left stick click / Menu</dd></div></dl>
           </div>
           <div class="control-panel" role="tabpanel" id="panel-touch" aria-labelledby="tab-touch" tabindex="0" hidden>
             <dl><div><dt>Move</dt><dd>Drag on the left</dd></div><div><dt>Look</dt><dd>Drag on the right</dd></div><div><dt>Fire</dt><dd>Hold Fire</dd></div><div><dt>Reload / swap</dt><dd>Tap Reload / Swap</dd></div><div><dt>Scan for a drone</dt><dd>Tap Scan</dd></div></dl>

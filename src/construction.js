@@ -186,7 +186,8 @@ export function construction(scene, {occluders, light=bounceLight, spacing=.70, 
         else uv.setXY(i,x,-z);
       }
       const l=light(x,y,z);
-      color.set([l,l,l],3*i);
+      const j=3*i;
+      color[j]=l; color[j+1]=l; color[j+2]=l;
     }
     geo.setAttribute('color',new THREE.BufferAttribute(color,3));
     geo.clearGroups();

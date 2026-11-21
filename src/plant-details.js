@@ -120,14 +120,16 @@ function instrumentAtlas(size) {
 
 function graphics() {
   if (graphicMaterial) return graphicMaterial;
-  const texture = new THREE.CanvasTexture(instrumentAtlas(getTextureQuality()));
+  const atlasSize = Math.min(2048, getTextureQuality());
+  const texture = new THREE.CanvasTexture(instrumentAtlas(atlasSize));
   texture.name='Plant instruments and archive printing';
   texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=4;
   graphicMaterial = new THREE.MeshStandardMaterial({map:texture,roughness:.78,vertexColors:true});
   onTextureQualityChange(size=>{
+    const nextSize = Math.min(2048, size);
     const previous=texture.image;
-    if(previous.width===size)return;
-    const replacement=instrumentAtlas(size);
+    if(previous.width===nextSize)return;
+    const replacement=instrumentAtlas(nextSize);
     texture.dispose();texture.image=replacement;texture.needsUpdate=true;
     previous.width=previous.height=1;
   });

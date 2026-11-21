@@ -22,13 +22,12 @@ export function createEncounters(scene,world,sound) {
       armor:index%4===3?3:2};
   });
   const effects=makeImpactEffects(group);
-  const surfaceRay=new THREE.Raycaster();
-  const contacts=[];
+  const hitInfo={distance:0,normal:new THREE.Vector3()};
+  const liveList=[];
   const player=new THREE.Vector3(), origin=new THREE.Vector3(), heading=new THREE.Vector3();
   const aimPoint=new THREE.Vector3(), end=new THREE.Vector3(), normal=new THREE.Vector3();
   const shotFrom=new THREE.Vector3(),muzzle=new THREE.Vector3(),sphere=new THREE.Sphere();
   const sightLine=new THREE.Ray();
-  const normalMatrix=new THREE.Matrix3();
   const state={};
   const weapons={};
   let time=0, cooldown=0, shieldDelay=0, grace=0, active=false;
@@ -155,11 +154,10 @@ export function createEncounters(scene,world,sound) {
     return true;
   }
   function surfaceHit(from,direction,length) {
-    surfaceRay.set(from,direction);
-    surfaceRay.near=.012;surfaceRay.far=length;
-    contacts.length=0;
-    surfaceRay.intersectObjects(world.occluders,false,contacts);
-    return contacts[0];
+    return world.raycast(from,direction,length,hitInfo);
+  }
+  function isBlocked(from,direction,length) {
+    return world.isOccluded(from,direction,length);
   }
   function reload(){
     if(!active||state.down||state.won||state.swapPhase!=='idle'||state.charging)return false;
@@ -207,7 +205,7 @@ export function createEncounters(scene,world,sound) {
         sound?.effect?.('hit');
       }
     }else if(wall){
-      normal.copy(wall.face.normal).applyMatrix3(normalMatrix.getNormalMatrix(wall.object.matrixWorld)).normalize();
+      normal.copy(wall.normal);
       effects.impact(end,normal,'plaster',.75);
     }
     if(state.ammo===0)reload();
@@ -246,7 +244,7 @@ export function createEncounters(scene,world,sound) {
       heading.subVectors(player,rig.root.position);
       const distance=heading.length();
       drone.visibleToPlayer=distance<detectionRange && distance>.02 &&
-        !surfaceHit(rig.root.position,heading.normalize(),Math.max(.012,distance-.08));
+        !isBlocked(rig.root.position,heading.divideScalar(distance),Math.max(.012,distance-.08));
     }
     if(drone.visibleToPlayer&&!state.down&&!state.won){
       const targetYaw=Math.atan2(player.x-rig.root.position.x,player.z-rig.root.position.z);
@@ -299,7 +297,9 @@ export function createEncounters(scene,world,sound) {
     return closest;
   }
   function livePositions(){
-    return drones.filter(drone=>drone.health>0).map(drone=>drone.rig.root.position);
+    liveList.length=0;
+    for(const drone of drones)if(drone.health>0)liveList.push(drone.rig.root.position);
+    return liveList;
   }
   return {get state(){return state;}, update,preview,fire,reload,reset,respawn,nearest,livePositions,switchWeapon,selectWeapon,
     setActive(value){active=Boolean(value);group.visible=active;}};

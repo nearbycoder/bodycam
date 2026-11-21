@@ -48,6 +48,16 @@ for (const list of document.querySelectorAll('[data-tabs]')) {
 }
 
 const hero = document.querySelector('#hero-video');
+const heroClock = document.querySelector('#hero-clock');
+if (heroClock) {
+  let elapsedSeconds = 0;
+  const baseMs = Date.UTC(2026, 10, 17, 14, 33, 31);
+  setInterval(() => {
+    if (document.hidden) return;
+    elapsedSeconds++;
+    heroClock.textContent = new Date(baseMs + elapsedSeconds * 1000).toISOString().slice(0, 19).replace('T', ' ');
+  }, 1000);
+}
 const motionButton = document.querySelector('#motion-toggle');
 const dialog = document.querySelector('#footage-dialog');
 const player = document.querySelector('#footage-player');

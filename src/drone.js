@@ -254,7 +254,7 @@ export function buildDrone(parent) {
   const signal = new THREE.MeshBasicMaterial({color:amber});
   body.add(new THREE.Mesh(castings.indicators,signal),gimbal);
   const fans = new THREE.InstancedMesh(castings.propeller,castings.blades,4);
-  const streak = new THREE.InstancedMesh(blurSurface,rotorBlur.clone(),4);
+  const streak = new THREE.InstancedMesh(blurSurface,rotorBlur,4);
   const pivot = new THREE.Object3D();
   for (const mesh of [fans,streak]) {
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -265,19 +265,32 @@ export function buildDrone(parent) {
   shadow.scale.set(1.17,1,.85);shadow.renderOrder=1;
   parent.add(root,shadow);
   registerActorBounds(body,flyingBounds);
-  let previous, angle=0;
+  let previous, angle=0, clonedStreak=false, settledWreck=false;
   function animate(time,phase,charge,stagger,wreck) {
     const elapsed = previous === undefined ? 0 : Math.max(0,time-previous);
     previous=time;
+    if (wreck === 0) settledWreck = false;
+    else if (settledWreck) return;
+    if (wreck >= 1) settledWreck = true;
     angle = (angle + elapsed*87*(1-wreck)) % tau;
-    for (let i=0;i<motors.length;i++) {
-      pivot.position.copy(motors[i]);
-      pivot.rotation.y = (i === 0 || i === 3 ? angle : -angle) + i*1.27 + phase;
-      pivot.updateMatrix();
-      fans.setMatrixAt(i,pivot.matrix);streak.setMatrixAt(i,pivot.matrix);
+    if (body.visible || wreck > 0 || elapsed === 0) {
+      for (let i=0;i<motors.length;i++) {
+        pivot.position.copy(motors[i]);
+        pivot.rotation.y = (i === 0 || i === 3 ? angle : -angle) + i*1.27 + phase;
+        pivot.updateMatrix();
+        fans.setMatrixAt(i,pivot.matrix);streak.setMatrixAt(i,pivot.matrix);
+      }
+      fans.instanceMatrix.needsUpdate=true;streak.instanceMatrix.needsUpdate=true;
     }
-    fans.instanceMatrix.needsUpdate=true;streak.instanceMatrix.needsUpdate=true;
-    streak.material.uniforms.speed.value = 1-wreck;
+    if (wreck > 0 && !clonedStreak) {
+      streak.material = rotorBlur.clone();
+      clonedStreak = true;
+    } else if (wreck === 0 && clonedStreak) {
+      streak.material.dispose();
+      streak.material = rotorBlur;
+      clonedStreak = false;
+    }
+    if (clonedStreak) streak.material.uniforms.speed.value = 1-wreck;
     streak.visible = wreck < .96;
     if (wreck > 0) {
       body.rotation.set(-.28*wreck,0,1.31*wreck);

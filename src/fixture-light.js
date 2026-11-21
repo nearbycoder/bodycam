@@ -5,6 +5,7 @@ const cell=3.2/12, origin=[1.0,-3.2-cell,-16.28], size=[114,50,71];
 const inverseSize=new THREE.Vector3(...size.map(n=>1/(n*cell)));
 const bindings=new WeakMap();
 
+const pulseUniform={value:1};
 function lightMaterial(mat,texture) {
   if(!mat?.isMeshStandardMaterial)return;
   const bound=bindings.get(mat);
@@ -18,11 +19,13 @@ function lightMaterial(mat,texture) {
     shader.uniforms.fixtureField=sampler;
     shader.uniforms.fixtureOrigin={value:new THREE.Vector3(...origin)};
     shader.uniforms.fixtureScale={value:inverseSize};
+    shader.uniforms.fixturePulse=pulseUniform;
     shader.vertexShader='varying vec3 fixturePoint;\n'+shader.vertexShader.replace('#include <worldpos_vertex>',
       '#include <worldpos_vertex>\nfixturePoint=(modelMatrix*vec4(transformed,1.)).xyz;');
     shader.fragmentShader=`varying vec3 fixturePoint;
       uniform highp sampler3D fixtureField;
       uniform vec3 fixtureOrigin,fixtureScale;
+      uniform float fixturePulse;
     `+shader.fragmentShader.replace('#include <opaque_fragment>',`
       {
       vec3 geometricNormal=inverseTransformDirection(nonPerturbedNormal,viewMatrix);
@@ -32,8 +35,10 @@ function lightMaterial(mat,texture) {
       vec3 incoming=(field.rgb*255.-128.)/127.;
       float energy=2.*field.a/max(.035,1.-field.a);
       if(any(lessThan(probeUV,vec3(0.))) || any(greaterThan(probeUV,vec3(1.))))energy=0.;
-      vec3 lampColor=mix(vec3(.81,1.02,.94),vec3(1.01,1.03,.97),step(-.07,fixturePoint.y));
-      float diffuseFlux=energy*(.16+.94*max(dot(shadingNormal,incoming),0.));
+      float inBasement=1.-step(-.07,fixturePoint.y);
+      energy*=mix(1.,fixturePulse,inBasement*.85+.15);
+      vec3 lampColor=mix(vec3(.72,1.03,.88),vec3(.98,1.02,.95),step(-.07,fixturePoint.y));
+      float diffuseFlux=energy*(.14+.96*max(dot(shadingNormal,incoming),0.));
       outgoingLight+=lampColor*diffuseColor.rgb*(1.-.60*metalnessFactor)*diffuseFlux;
       // Broad highlights from the incident lobe follow polished curved panels.
       vec3 reflected=reflect(normalize(fixturePoint-cameraPosition),shadingNormal);
@@ -103,5 +108,9 @@ export function fixtureLighting() {
       worker.postMessage(params);
     }catch{fallback();}
   }
-  return {strip:(x,y,z,length)=>fixtures.push([x,y,z,length]),finish};
+  return {
+    strip:(x,y,z,length)=>fixtures.push([x,y,z,length]),
+    setPulse(value){pulseUniform.value=value;},
+    finish
+  };
 }

@@ -32,12 +32,16 @@ export function fitScannedSurface(material, type) {
 }
 
 const variation = `
+  float jointHash(vec2 p) {
+    vec3 q=fract(p.xyx*vec3(.1031,.1030,.0973));
+    q+=dot(q,q.yzx+33.33);
+    return fract((q.x+q.y)*q.z);
+  }
   float jointNoise(vec2 p) {
     vec2 i=floor(p), f=fract(p);
     f=f*f*(3.-2.*f);
-    vec4 corners=vec4(dot(i,vec2(127.1,311.7)))+vec4(0.,127.1,311.7,438.8);
-    vec4 samples=fract(sin(corners)*43758.5453);
-    return mix(mix(samples.x,samples.y,f.x),mix(samples.z,samples.w,f.x),f.y);
+    return mix(mix(jointHash(i),jointHash(i+vec2(1.,0.)),f.x),
+               mix(jointHash(i+vec2(0.,1.)),jointHash(i+1.),f.x),f.y);
   }
 `;
 

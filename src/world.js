@@ -8,6 +8,18 @@ import { doorCutWidth, doorPhotoExtent, doorway, stairNosing, wallWear, windowSi
 import { buildAnnex } from './expansion.js';
 import { cullHiddenActors } from './actor-visibility.js';
 import { motorCamera } from './vehicle.js';
+import { buildOccluderGrid } from './occluder-grid.js';
+
+function patchRectAreaEarlyOut() {
+  const chunk = THREE.ShaderChunk.lights_physical_pars_fragment;
+  if (!chunk || chunk.includes('bodycam_rect_early_out')) return;
+  const anchor = 'vec3 lightColor = rectAreaLight.color;';
+  if (!chunk.includes(anchor)) return;
+  THREE.ShaderChunk.lights_physical_pars_fragment = chunk.replace(
+    anchor,
+    `${anchor}\n\t\t/* bodycam_rect_early_out */ if ( max( lightColor.r, max( lightColor.g, lightColor.b ) ) <= 0.0001 ) return;`
+  );
+}
 
 const eye = 1.58;
 const doors = [-.55,-7.2];
@@ -61,14 +73,25 @@ function move(groundAt,position,dx,dz) {
 }
 
 export function buildWorld(scene) {
+  patchRectAreaEarlyOut();
   RectAreaLightUniformsLib.init();
-  scene.background=new THREE.Color(0x9c9a95);
-  scene.add(new THREE.HemisphereLight(0xf2efe9,0xb5aaa0,1.24));
-  const sky=new THREE.DirectionalLight(0xfff9ee,.56);
+  scene.background=new THREE.Color(0x888a86);
+  const fog=new THREE.FogExp2(0x1f2320, .026);
+  scene.fog=fog;
+  const hemi=new THREE.HemisphereLight(0xd6dbd4,0x64625a,.86);
+  scene.add(hemi);
+  const sky=new THREE.DirectionalLight(0xf3f5f0,.46);
   sky.position.set(-4,6,.7);
   scene.add(sky);
   const occluders=[];
-  const build=construction(scene,{occluders});
+  const areaDescriptors=[];
+  function addAreaLight(desc) {
+    areaDescriptors.push(desc);
+  }
+  const intakeGroup=new THREE.Group();
+  intakeGroup.name='Intake wing and west stair';
+  scene.add(intakeGroup);
+  const build=construction(intakeGroup,{occluders});
   const {box,rod,add,material,finish}=build;
 
   // "plane" is the finished interior face. A wall extends outwards from it.
@@ -131,10 +154,12 @@ export function buildWorld(scene) {
       if(next<high) frame(left,right,next-.014,next+.014,.197,.036,'iron');
       base=next;
     }
-    const light=new THREE.RectAreaLight(0xf4f5ff,power, width,h);
-    light.position.set(...placed(center,mid,-.065));
-    light.lookAt(...placed(center,mid,-1));
-    scene.add(light);
+    addAreaLight({
+      color:0xeef2fa, intensity:power, width, height:h,
+      position:new THREE.Vector3(...placed(center,mid,-.065)),
+      target:new THREE.Vector3(...placed(center,mid,-1)),
+      minY:low-2.4, maxY:high+2.0, range:18
+    });
   }
 
   // Three cast concrete bays with deep reveals and open, untrimmed doorways.
@@ -171,10 +196,12 @@ export function buildWorld(scene) {
     const sideWindows=i===0?[[center-.78,1.11,1.01,2.48]]:[[center,1.66,0,2.42]];
     wall('x',5.48,1,rear,front,0,3.1,sideWindows,'plaster');
     if(i===0) windowAt('x',5.48,1,...sideWindows[0],2,2,4.25);
-    const spill=new THREE.RectAreaLight(0xdad3c6,2.65,1.0,2.21);
-    spill.position.set(1.62,1.13,center);
-    spill.lookAt(3.8,1.0,center-.35);
-    scene.add(spill);
+    addAreaLight({
+      color:0xd8d3c8, intensity:2.65, width:1.0, height:2.21,
+      position:new THREE.Vector3(1.62,1.13,center),
+      target:new THREE.Vector3(3.8,1.0,center-.35),
+      minY:-.5, maxY:3.4, range:13
+    });
   }
 
   function pendant(x,y,z,drop,shade=true) {
@@ -257,12 +284,108 @@ export function buildWorld(scene) {
   wall('x',-2.75,-1,-12.75,-9.67,3.2,6.4,[],'door');
   wall('x',1.25,1,-12.75,-9.67,3.2,6.4,[[-11.20,1.50,3.2,5.62]],'door');
   finish();
-  addDecor(scene);
-  const annex=buildAnnex(scene,occluders);
+  addDecor(intakeGroup);
+  const annex=buildAnnex(scene,occluders,addAreaLight);
   cullHiddenActors(scene,occluders);
+  const occluderGrid=buildOccluderGrid(occluders);
+
+  // Fixed pool of 4 RectAreaLights: eliminates 56%-100% of LTC fragment shader
+  // evaluations without ever changing NUM_RECT_AREA_LIGHTS or recompiling shaders.
+  const AREA_POOL=4;
+  const areaPool=[];
+  for(let i=0;i<AREA_POOL;i++){
+    const l=new THREE.RectAreaLight(0xffffff,0,1,1);
+    scene.add(l);
+    areaPool.push(l);
+  }
+  const scored=areaDescriptors.map(desc=>({desc,score:Infinity,gain:0}));
+  const [basementGroup,worksGroup,recordsGroup,roofGroup]=annex.groups.floors;
+  const eastStairGroup=annex.groups.eastStair;
+
+  const targetFogColor=new THREE.Color(), targetHemiSky=new THREE.Color(), targetHemiGround=new THREE.Color();
+  const camPos=new THREE.Vector3();
+
+  function updateVisibility(camera,dt=0,elapsed=0){
+    camPos.setFromMatrixPosition(camera.matrixWorld);
+    const {x,y,z}=camPos;
+
+    // Conservative floor/wing culling: zero pop-in across every portal and stairwell.
+    basementGroup.visible = y < 1.2 || (x > 21.0 && y < 2.6);
+    roofGroup.visible = y > 4.4;
+    recordsGroup.visible = (y > 1.4 && y < 6.45) || (x > 21.0 && y > 0.5) || (z < -12.4 && y > 0.8 && y < 6.45);
+    worksGroup.visible = (y > -1.2 && y < 4.0) || (x > 21.0 && y < 4.6);
+    intakeGroup.visible = y > -0.6 && (y < 6.0 || x < 12.5);
+    eastStairGroup.visible = x > 4.5 || (Math.abs(z + 7.2) < 2.4 && y < 3.0);
+
+    // Assign up to 4 nearest relevant area lights into the fixed pool.
+    for(let i=0;i<scored.length;i++){
+      const item=scored[i], d=item.desc;
+      if(y<d.minY || y>d.maxY){
+        item.score=Infinity; item.gain=0;
+      }else{
+        const dist=camPos.distanceTo(d.position);
+        const fade=1-THREE.MathUtils.smoothstep(dist,d.range*.62,d.range);
+        item.gain=fade;
+        item.score=fade>0.005 ? dist : Infinity;
+      }
+    }
+    scored.sort((a,b)=>a.score-b.score);
+    for(let i=0;i<AREA_POOL;i++){
+      const light=areaPool[i], item=scored[i];
+      if(item && item.gain>0.005){
+        const d=item.desc;
+        light.color.setHex(d.color);
+        light.intensity=d.intensity*item.gain;
+        light.width=d.width; light.height=d.height;
+        light.position.copy(d.position);
+        light.lookAt(d.target);
+      }else{
+        light.intensity=0;
+      }
+    }
+
+    // Zone-tuned gritty atmosphere, ambient fill, and industrial ballast flicker.
+    let targetDensity=.026, targetHemiInt=.84, targetSkyInt=.44;
+    if(y>6.0){
+      targetFogColor.setHex(0x63696c); targetDensity=.017;
+      targetHemiSky.setHex(0xcfd6db); targetHemiGround.setHex(0x52524c);
+      targetHemiInt=1.06; targetSkyInt=.58;
+    }else if(y<-0.4){
+      targetFogColor.setHex(0x0c1210); targetDensity=.048;
+      targetHemiSky.setHex(0x6e857c); targetHemiGround.setHex(0x212623);
+      targetHemiInt=.36; targetSkyInt=.08;
+    }else if(y>2.8){
+      targetFogColor.setHex(0x1b2022); targetDensity=.031;
+      targetHemiSky.setHex(0xb3bec2); targetHemiGround.setHex(0x474a48);
+      targetHemiInt=.64; targetSkyInt=.26;
+    }else if(x>5.4){
+      targetFogColor.setHex(0x191d1a); targetDensity=.029;
+      targetHemiSky.setHex(0xc2c7be); targetHemiGround.setHex(0x4c4c44);
+      targetHemiInt=.68; targetSkyInt=.28;
+    }else{
+      targetFogColor.setHex(0x232622); targetDensity=.025;
+      targetHemiSky.setHex(0xd4dad2); targetHemiGround.setHex(0x5e5c53);
+      targetHemiInt=.84; targetSkyInt=.46;
+    }
+    const blend=dt>0 ? 1-Math.exp(-dt*3.5) : 1;
+    fog.color.lerp(targetFogColor,blend);
+    fog.density=THREE.MathUtils.lerp(fog.density,targetDensity,blend);
+    hemi.color.lerp(targetHemiSky,blend);
+    hemi.groundColor.lerp(targetHemiGround,blend);
+    hemi.intensity=THREE.MathUtils.lerp(hemi.intensity,targetHemiInt,blend);
+    sky.intensity=THREE.MathUtils.lerp(sky.intensity,targetSkyInt,blend);
+
+    // Subtle dirty 50/60Hz fluorescent ballast hum + occasional failing-tube stutter.
+    const hum=1+.018*Math.sin(elapsed*62.8)+.011*Math.sin(elapsed*119.3);
+    const cycle=(elapsed*.37)%1;
+    const stutter=(cycle>.91 && cycle<.97) ? (.74+.26*Math.sin(elapsed*88)) : 1;
+    annex.setFixturePulse(hum*stutter);
+  }
+
   const groundAt=(x,z,feet)=>annex.ground(x,z,feet) ?? originalGround(x,z,feet);
   return {
     spawn:new THREE.Vector3(.04,eye,2.85),yaw:0,occluders,groundAt,motorCamera,
+    raycast:occluderGrid.raycast, isOccluded:occluderGrid.isOccluded, updateVisibility,
     targets:[{x:.55,y:0,z:-1.94},{x:3.8,y:0,z:-.80},{x:3.9,y:0,z:-7.2},...annex.targets],
     move:(position,dx,dz)=>move(groundAt,position,dx,dz),
     sector(position){

@@ -13,24 +13,28 @@ try {
 let requested = committed, controller = new AbortController(), transition = null;
 let displayDevice, decoderPromise;
 const base = import.meta.env.BASE_URL;
-const waiters = [];
-let jobs = 0;
+function makePool(max) {
+  const queue = [];
+  let active = 0;
+  return async work => {
+    if (active >= max) await new Promise(resolve => queue.push(resolve));
+    else active++;
+    try { return await work(); }
+    finally {
+      const next = queue.shift();
+      if (next) next(); else active--;
+    }
+  };
+}
+const fetchPool = makePool(6);
+const rasterDecodePool = makePool(4);
+const ktxDecodePool = makePool(2);
 
 export function initializeTextureQualityRenderer(renderer) { displayDevice = renderer; }
 export function getTextureQuality() { return requested; }
 export function onTextureQualityChange(callback) {
   observers.add(callback);
   return () => observers.delete(callback);
-}
-
-async function limited(work) {
-  if (jobs >= 2) await new Promise(resolve => waiters.push(resolve));
-  else jobs++;
-  try { return await work(); }
-  finally {
-    const next = waiters.shift();
-    if (next) next(); else jobs--;
-  }
 }
 
 async function decodePacked(bytes) {
@@ -59,28 +63,35 @@ async function decode(entry, level, signal) {
   // succeeds. A failed transition can also roll back while the browser is offline.
   let file=entry.backup?.level===level ? entry.backup : null;
   if (!file) {
-    const packedFile=Boolean(displayDevice && level===4096 && packed.has(path));
-    const url=base+'quality/'+level+'/'+path+(packedFile?'.ktx2':'');
-    const response=await fetch(url,{signal});
-    if (!response.ok) throw new Error('Could not load '+path+' ('+response.status+')');
-    file={level,blob:await response.blob(),packed:packedFile};
+    file = await fetchPool(async () => {
+      signal.throwIfAborted();
+      const packedFile=Boolean(displayDevice && level===4096 && packed.has(path));
+      const url=base+'quality/'+level+'/'+path+(packedFile?'.ktx2':'');
+      const response=await fetch(url,{signal});
+      if (!response.ok) throw new Error('Could not load '+path+' ('+response.status+')');
+      return {level,blob:await response.blob(),packed:packedFile};
+    });
   }
   const {packed:compressed, blob}=file;
-  if (compressed) {
-    const texture = await decodePacked(await blob.arrayBuffer());
-    return { file,image:texture.image, mipmaps:texture.mipmaps, format:texture.format,
-      type:texture.type, compressed:texture.isCompressedTexture, flipY:false };
-  }
-  if (typeof createImageBitmap === 'function') {
-    const image = await createImageBitmap(blob,{imageOrientation:flipY?'flipY':'none',premultiplyAlpha:'none',colorSpaceConversion:'none'});
-    return {file,image,flipY:false};
-  }
-  const urlObject = URL.createObjectURL(blob);
-  try {
-    const image = new Image();
-    image.src=urlObject; await image.decode();
-    return {file,image,flipY};
-  } finally { URL.revokeObjectURL(urlObject); }
+  const decodePool = compressed ? ktxDecodePool : rasterDecodePool;
+  return decodePool(async () => {
+    signal.throwIfAborted();
+    if (compressed) {
+      const texture = await decodePacked(await blob.arrayBuffer());
+      return { file,image:texture.image, mipmaps:texture.mipmaps, format:texture.format,
+        type:texture.type, compressed:texture.isCompressedTexture, flipY:false };
+    }
+    if (typeof createImageBitmap === 'function') {
+      const image = await createImageBitmap(blob,{imageOrientation:flipY?'flipY':'none',premultiplyAlpha:'none',colorSpaceConversion:'none'});
+      return {file,image,flipY:false};
+    }
+    const urlObject = URL.createObjectURL(blob);
+    try {
+      const image = new Image();
+      image.src=urlObject; await image.decode();
+      return {file,image,flipY};
+    } finally { URL.revokeObjectURL(urlObject); }
+  });
 }
 
 function configure(texture, data) {
@@ -96,7 +107,7 @@ function configure(texture, data) {
 async function load(entry, level, signal) {
   if (entry.level === level) return;
   if (entry.pending?.signal === signal) return entry.pending.promise;
-  const promise = limited(async () => {
+  const promise = (async () => {
     signal.throwIfAborted();
     if (entry.level === level) return;
     const data = await decode(entry,level,signal);
@@ -111,7 +122,7 @@ async function load(entry, level, signal) {
     old?.close?.();
     entry.level = level;
     if (level===committed) entry.backup=data.file;
-  });
+  })();
   entry.pending = {signal,promise};
   try { await promise; }
   finally { if (entry.pending?.promise===promise) entry.pending=null; }

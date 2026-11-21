@@ -33,6 +33,7 @@ Connect an Xbox controller, open the game and press **A**. Use the D-pad and A i
 | Focus aim | LT | Right click |
 | Reload | X | R |
 | Switch weapon | RB | 1 for pistol, 2 for carbine |
+| Tactical light | LB | F |
 | Scan route to a drone | Y | Q |
 | Sprint | Click left stick while moving forward | Hold Shift |
 | Floor plan | View | Tab |

@@ -12,9 +12,9 @@ const ratio={pistol:620/700,carbine:1.5};
 // glove normally hides. Vector outlines keep the contact edges at source scale.
 function segmentation() {
   const canvas=document.createElement('canvas');
-  canvas.width=1536;canvas.height=1024;
+  canvas.width=768;canvas.height=512;
   const ctx=canvas.getContext('2d');
-  ctx.scale(1536/600,1024/400);
+  ctx.scale(768/600,512/400);
   ctx.fillStyle='#000';ctx.fillRect(0,0,600,400);
   ctx.globalCompositeOperation='lighter';
   function shape(color,points){
@@ -73,7 +73,7 @@ export function createWeaponAnimation() {
   let horizontal=0,vertical=0,shoulder=0,elbow=0,previousWeapon='',draw=0;
   function update(camera,state,aspect,sway,bob,t,dt) {
     const long=state.weapon==='carbine', action=state.motion??{};
-    const focus=sat(action.focus??((82-camera.fov)/22));
+    const focus=sat(action.focus??((84-camera.fov)/23));
     const sprint=sat(action.sprint??0),turn=clamp(action.turn??0,-1,1);
     const side=clamp(action.tilt??0,-1,1),land=sat(action.landing??0);
     const acceleration=clamp(action.acceleration??0,-1,1);

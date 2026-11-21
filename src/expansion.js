@@ -22,9 +22,9 @@ const floors = [
 ];
 function inRect(x,z,r){
   if(r.angle){
-    const cx=(r.x0+r.x1)*.5,cz=(r.z0+r.z1)*.5,dx=x-cx,dz=z-cz;
-    x=cx+dx*Math.cos(r.angle)-dz*Math.sin(r.angle);
-    z=cz+dx*Math.sin(r.angle)+dz*Math.cos(r.angle);
+    const dx=x-r.cx,dz=z-r.cz;
+    x=r.cx+dx*r.cos-dz*r.sin;
+    z=r.cz+dx*r.sin+dz*r.cos;
   }
   return x>=r.x0 && x<=r.x1 && z>=r.z0 && z<=r.z1;
 }
@@ -149,22 +149,25 @@ function annexSkin(kind,floor){
   }
 }
 
-export function buildAnnex(scene,occluders){
-  const zones=[],targets=[],obstacles=[];
-  const lights=fixtureLighting(),firstNode=scene.children.length,firstOccluder=occluders.length;
+export function buildAnnex(scene,occluders,addAreaLight){
+  const zonesByFloor=[[],[],[],[]],obstaclesByFloor=[[],[],[],[]],targets=[];
+  const lights=fixtureLighting(),firstOccluder=occluders.length;
+  const floorGroups=[], eastStairGroup=new THREE.Group();
+  eastStairGroup.name='East stair shaft';
+  scene.add(eastStairGroup);
   const sky=loadQualityTexture('architecture/roof-sky.jpg');
   sky.colorSpace=THREE.SRGBColorSpace;
   sky.mapping=THREE.EquirectangularReflectionMapping;
   scene.background=sky;scene.backgroundRotation.y=Math.PI;
   const muralTextures=new Map();
-  function mural(name,x,h,z,yaw,w,height) {
+  function mural(parent,name,x,h,z,yaw,w,height) {
     if(!muralTextures.has(name)){
       const map=loadQualityTexture('decor/'+name+'.webp');
       map.colorSpace=THREE.SRGBColorSpace;map.anisotropy=8;
       muralTextures.set(name,new THREE.MeshStandardMaterial({map,transparent:true,depthWrite:false,roughness:1,polygonOffset:true,polygonOffsetFactor:-1}));
     }
     const plane=new THREE.Mesh(new THREE.PlaneGeometry(w,height),muralTextures.get(name));
-    plane.position.set(x,h,z);plane.rotation.y=yaw;scene.add(plane);
+    plane.position.set(x,h,z);plane.rotation.y=yaw;parent.add(plane);
   }
   const shadowCanvas=document.createElement('canvas');
   shadowCanvas.width=shadowCanvas.height=96;
@@ -176,7 +179,7 @@ export function buildAnnex(scene,occluders){
   }
   const shadowInk=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1});
 
-  const zone=(x0,x1,z0,z1,y,name)=>zones.push({x0,x1,z0,z1,y,name});
+  const zone=(x0,x1,z0,z1,y,name)=>zonesByFloor[levelFor(y)].push({x0,x1,z0,z1,y,name});
   const anchor=(x,y,z)=>targets.push({x,y,z});
   // Interior dimensions. Junction volumes bridge the .20m thick wall at a door.
   const x0=5.73,x1=23.0,join=14.26,thick=.20;
@@ -190,17 +193,20 @@ export function buildAnnex(scene,occluders){
       if(!interior)return .78+.28*Math.min(1,Math.max(0,(h-y)*.9));
       const spill=Math.exp(-Math.min(Math.abs(z-rear),Math.abs(z-front))*.46);
       const contact=Math.max(0,Math.min(h-y,(y+floorToRoof)-h));
-      return (y<0?.54:.68)+.31*spill+.12*Math.min(1,contact*2.);
+      return (y<0?.42:.62)+.31*spill+.12*Math.min(1,contact*2.);
     };
-    const roof=interior?null:new THREE.Group();
-    if(roof)scene.add(roof);
-    const {box,rod,finish,add,material}=construction(roof??scene,{
+    const floorGroup=new THREE.Group();
+    floorGroup.name=floor.name;
+    scene.add(floorGroup);
+    floorGroups.push(floorGroup);
+    const roof=interior?null:floorGroup;
+    const {box,rod,finish,add,material}=construction(floorGroup,{
       occluders,spacing:1.23,light:shade,createMaterial:kind=>annexSkin(kind,floor)
     });
-    const sign=(label,x,h,z,angle,w=1.20,sideText)=>{
+    const sign=(parent,label,x,h,z,angle,w=1.20,sideText)=>{
       const mat=makeSign(label,floor.code,'#'+floor.tint.toString(16).padStart(6,'0'),sideText);
       const plaque=new THREE.Mesh(new THREE.PlaneGeometry(w,w*176/640),mat);
-      plaque.position.set(x,h,z);plaque.rotation.y=angle;scene.add(plaque);
+      plaque.position.set(x,h,z);plaque.rotation.y=angle;parent.add(plaque);
     };
     const deck=(xa,xb,za,zb,height,kind='slab')=>box((xa+xb)/2,height-.08,(za+zb)/2,xb-xa,.16,zb-za,kind);
     function wall(axis,plane,from,to,out,holes=[],height=floorToRoof,kind='wall',bottom=y){
@@ -217,7 +223,9 @@ export function buildAnnex(scene,occluders){
       slab(edge,to,bottom,bottom+height);
     }
     function obstacle(x,z,w,d,angle=0){
-      obstacles.push({x0:x-w*.5,x1:x+w*.5,z0:z-d*.5,z1:z+d*.5,y,angle});
+      const rec={x0:x-w*.5,x1:x+w*.5,z0:z-d*.5,z1:z+d*.5,y,angle};
+      if(angle){rec.cx=x;rec.cz=z;rec.cos=Math.cos(angle);rec.sin=Math.sin(angle);}
+      obstaclesByFloor[levelFor(y)].push(rec);
       if(roof)return;
       const shadow=new THREE.PlaneGeometry(w+.89,d+.86).rotateX(-Math.PI/2).rotateY(angle);
       shadow.translate(x+.045,y+.004,z+.085);
@@ -231,12 +239,12 @@ export function buildAnnex(scene,occluders){
       }
       box(x,y+h-.03,z,angle===0?w+.09:.09,.085,angle===0?.09:w+.09,'painted');
     }
-    function fluorescent(x,z,length=1.50,on=true){
+    function fluorescent(x,z,length=1.50,on=true,targetBox=box,targetRod=rod){
       if(on)lights.strip(x,y+2.893,z,length);
-      box(x,y+2.96,z,length+.16,.11,.20,'sheet');
+      targetBox(x,y+2.96,z,length+.16,.11,.20,'sheet');
       for(const a of [-.052,.052]){
-        rod([x-length/2,y+2.893,z+a],[x+length/2,y+2.893,z+a],.017,on?'tube':'ceramic',.017,12);
-        for(const side of [-1,1])box(x+side*(length/2-.015),y+2.904,z+a,.041,.063,.046,'ceramic');
+        targetRod([x-length/2,y+2.893,z+a],[x+length/2,y+2.893,z+a],.017,on?'tube':'ceramic',.017,12);
+        for(const side of [-1,1])targetBox(x+side*(length/2-.015),y+2.904,z+a,.041,.063,.046,'ceramic');
       }
     }
     const machinery=plantDetails({add,material},occluders);
@@ -279,20 +287,20 @@ export function buildAnnex(scene,occluders){
       wall('x',x1,hallBack,hallFront,1,[eastDoor]);
       zone(x1,stairX,hallBack+.69,hallFront-.69,y,'East stair');
       deck(x1,stairX,midZ-1.01,midZ+1.01,y);
-      sign('East stair',x1-.02,y+2.70,midZ,-Math.PI/2,1.35);
+      sign(floorGroup,'East stair',x1-.02,y+2.70,midZ,-Math.PI/2,1.35);
       if(y===0){
-        mural('upper',10.67,y+1.55,hallFront-.014,Math.PI,3.75,1.48);
-        mural('chalk',14.75,y+1.68,hallBack+.015,0,1.72,.78);
+        mural(floorGroup,'upper',10.67,y+1.55,hallFront-.014,Math.PI,3.75,1.48);
+        mural(floorGroup,'chalk',14.75,y+1.68,hallBack+.015,0,1.72,.78);
       }else if(y<0){
-        mural('pencil',12.05,y+1.63,hallBack+.015,0,1.35,.79);
-        mural('loops',20.9,y+1.40,hallFront-.015,Math.PI,1.63,.95);
-      }else mural('room-tag',12.61,y+1.41,hallBack+.015,0,2.06,1.18);
+        mural(floorGroup,'pencil',12.05,y+1.63,hallBack+.015,0,1.35,.79);
+        mural(floorGroup,'loops',20.9,y+1.40,hallFront-.015,Math.PI,1.63,.95);
+      }else mural(floorGroup,'room-tag',12.61,y+1.41,hallBack+.015,0,2.06,1.18);
       const groundLink=y===0;
       if(groundLink){
         zone(5.48,x0,-8.03,-6.37,y,'Works gallery');
         deck(5.48,x0,-8.03,-6.37,y);
         // Original side-room wall contains the opening.
-        sign('Works gallery',5.46,y+2.65,midZ,-Math.PI/2,1.44);
+        sign(floorGroup,'Works gallery',5.46,y+2.65,midZ,-Math.PI/2,1.44);
       }else wall('x',x0,hallBack,hallFront,-1);
       for(const x of [7.45,11.65,15.85,20.05])fluorescent(x,midZ,1.8,x!==11.65||y>0);
       // Inspection drains and distribution boxes break up the run of wet concrete.
@@ -321,7 +329,7 @@ export function buildAnnex(scene,occluders){
         zone(doorX-doorWidth/2,doorX+doorWidth/2,Math.min(hallEdge,hallEdge+thick*dir),Math.max(hallEdge,hallEdge+thick*dir),y,label);
         deck(doorX-doorWidth/2,doorX+doorWidth/2,Math.min(hallEdge,hallEdge+thick*dir),Math.max(hallEdge,hallEdge+thick*dir),y);
         hatch(doorX,hallEdge,2.44,0,doorWidth);
-        sign(label,doorX,y+2.73,hallEdge-dir*.027,back?0:Math.PI,1.56);
+        sign(floorGroup,label,doorX,y+2.73,hallEdge-dir*.027,back?0:Math.PI,1.56);
         zone(xa,xb,zs,ze,y,label);deck(xa,xb,zs,ze,y);
         deck(xa,xb,zs,ze,y+levelHeight-.08,'lid');
         const link=i===0&&y===3.2;
@@ -360,9 +368,13 @@ export function buildAnnex(scene,occluders){
               const strip=new THREE.BoxGeometry(.064,.009,5.14);
               strip.translate(dx,.006,0).rotateY(car.yaw).translate(car.x,0,car.z);add(strip,material('painted'));
             }
-            const lamp=new THREE.RectAreaLight(0xfaf7ed,6.4,3.9,.47);
-            lamp.position.set(car.x-1.75,2.66,car.z-.75);lamp.lookAt(car.x,.64,car.z);scene.add(lamp);
-            parkCoupe(scene, {
+            addAreaLight({
+              color:0xfaf7ed, intensity:6.4, width:3.9, height:.47,
+              position:new THREE.Vector3(car.x-1.75,2.66,car.z-.75),
+              target:new THREE.Vector3(car.x,.64,car.z),
+              minY:-.5, maxY:3.4, range:16
+            });
+            parkCoupe(floorGroup, {
               bounds:new THREE.Box3(new THREE.Vector3(xa,y,zs),new THREE.Vector3(xb,y+floorToRoof,ze)).expandByScalar(thick+.10),
               openings:[[ze,doorway(doorX,doorWidth)],...windows.map(cut=>[winZ,cut])]
             });
@@ -385,7 +397,7 @@ export function buildAnnex(scene,occluders){
         deck(1.25,x0,za,zb,y);deck(1.50,5.53,za,zb,y+levelHeight-.08,'lid');
         wall('z',za,1.5,5.53,-1);wall('z',zb,1.5,5.53,1);
         fluorescent(3.56,-11.2,1.2);
-        sign('Records',1.224,y+2.66,-11.20,-Math.PI/2,1.30);
+        sign(floorGroup,'Records',1.224,y+2.66,-11.20,-Math.PI/2,1.30);
       }
     }else{
       zone(x0,x1,rear,front,y,floor.name);deck(x0,x1,rear,front,y,'membrane');
@@ -397,7 +409,7 @@ export function buildAnnex(scene,occluders){
       wall('x',x1,hallBack,hallFront,1,[[midZ,2.02,0,2.46]]);
       zone(x1,stairX,midZ-1.01,midZ+1.01,y,'East stair');
       deck(x1,stairX,midZ-1.01,midZ+1.01,y);
-      sign('Roof plant',x1+.225,y+2.68,midZ,Math.PI/2,1.5);
+      sign(floorGroup,'Roof plant',x1+.225,y+2.68,midZ,Math.PI/2,1.5);
       roofUnit(10.3,-12.8,3.90,1.96);roofUnit(16.55,-12.80,3.91,1.96);roofUnit(12.90,-2.18,3.4,1.75);
       // Roof services feed around the plant and continue up a compact aerial mast.
       for(const z of [-13.37,-12.84]){
@@ -436,42 +448,52 @@ export function buildAnnex(scene,occluders){
       }
       anchor(9.05,y,-8.60);anchor(18.93,y,-3.36);
     }
+    finish();
+    if(roof)installRoofDaylight(scene,floorGroup,sky);
+
     // The shaft has a landing at every floor, plus an intermediate landing
-    // joining two opposing flights. The same dimensions drive its walkable slope.
+    // joining two opposing flights. Built in its own group so floors can cull cleanly.
+    const stair=construction(eastStairGroup,{
+      occluders,spacing:1.23,light:shade,createMaterial:kind=>annexSkin(kind,floor)
+    });
+    const stairDeck=(xa,xb,za,zb,height,kind='slab')=>stair.box((xa+xb)/2,height-.08,(za+zb)/2,xb-xa,.16,zb-za,kind);
+    const stairWall=(axis,plane,from,to,out,height=levelHeight,kind='wall',bottom=y)=>{
+      if(axis==='x')stair.box(plane+out*thick*.5,bottom+height*.5,(from+to)*.5,thick,height,to-from,kind);
+      else stair.box((from+to)*.5,bottom+height*.5,plane+out*thick*.5,to-from,height,thick,kind);
+    };
     zone(stairX,first,hallBack,hallFront,y,'East stair');
-    deck(stairX,first,hallBack,hallFront,y,'concrete');
-    sign(floor.name,stairX+.72,y+1.70,hallBack+.012,0,1.28,'EAST STAIR');
-    for(const [z,out] of [[hallBack,-1],[hallFront,1]])wall('z',z,stairX,outer,out,[],levelHeight,'concrete');
-    wall('x',outer,hallBack,hallFront,1,[],levelHeight,'wall');
-    fluorescent(stairX+1.09,midZ,.94);
+    stairDeck(stairX,first,hallBack,hallFront,y,'concrete');
+    sign(eastStairGroup,floor.name,stairX+.72,y+1.70,hallBack+.012,0,1.28,'EAST STAIR');
+    for(const [z,out] of [[hallBack,-1],[hallFront,1]])stairWall('z',z,stairX,outer,out,levelHeight,'concrete');
+    stairWall('x',outer,hallBack,hallFront,1,levelHeight,'wall');
+    fluorescent(stairX+1.09,midZ,.94,true,stair.box,stair.rod);
     if(y<6.4){
       const rise=1.60,flightWidth=1.59,n=11,run=(last-first)/n;
-      deck(last,outer,hallBack,hallFront,y+rise,'concrete');
+      stairDeck(last,outer,hallBack,hallFront,y+rise,'concrete');
       for(let j=0;j<n;j++){
         const cx=first+run*(j+.5);
         for(const [z,high] of [[-8.065,y+rise*(j+1)/n],[-6.335,y+3.2-rise*j/n]]){
-          box(cx,high-.125,z,run+.0006,.25,flightWidth,'concrete');
-          box(cx-run*.5+.022,high+.002,z,.041,.009,flightWidth-.035,'painted');
+          stair.box(cx,high-.125,z,run+.0006,.25,flightWidth,'concrete');
+          stair.box(cx-run*.5+.022,high+.002,z,.041,.009,flightWidth-.035,'painted');
         }
       }
       const rail=(z,a,b)=>{
         for(let j=0;j<=4;j++){
           const f=j/4,cx=THREE.MathUtils.lerp(first,last,f),h=THREE.MathUtils.lerp(a,b,f);
-          box(cx,h+.44,z,.03,.89,.03,'steel');
+          stair.box(cx,h+.44,z,.03,.89,.03,'steel');
         }
-        for(const h of [.48,.90])rod([first,a+h,z],[last,b+h,z],.025,'pipework');
+        for(const h of [.48,.90])stair.rod([first,a+h,z],[last,b+h,z],.025,'pipework');
       };
       rail(-7.29,y+.08,y+1.6);rail(-7.11,y+3.2,y+1.67);
     }else{
-      deck(stairX,outer,hallBack,hallFront,y+3.18,'lid');
-      for(let j=0;j<3;j++)box(first,y+.465,hallBack+.09+j*.74,.04,.93,.04,'steel');
-      rod([first,y+.93,hallBack+.09],[first,y+.93,-7.34],.027,'pipework');
+      stairDeck(stairX,outer,hallBack,hallFront,y+3.18,'lid');
+      for(let j=0;j<3;j++)stair.box(first,y+.465,hallBack+.09+j*.74,.04,.93,.04,'steel');
+      stair.rod([first,y+.93,hallBack+.09],[first,y+.93,-7.34],.027,'pipework');
     }
-    finish();
-    if(roof)installRoofDaylight(scene,roof,sky);
+    stair.finish();
   }
 
-  lights.finish(scene.children.slice(firstNode),occluders.slice(firstOccluder));
+  lights.finish([...floorGroups,eastStairGroup],occluders.slice(firstOccluder));
 
   // Two-way ramps select a compatible elevation on the stacked flights.
   function stairHeight(x,z,feet){
@@ -491,17 +513,35 @@ export function buildAnnex(scene,occluders){
   function ground(x,z,feet){
     const slope=stairHeight(x,z,feet);
     if(slope!==null)return slope;
-    const area=zones.find(r=>near(r.y,feet)&&inRect(x,z,r));
-    if(!area||obstacles.some(o=>o.y===area.y&&inRect(x,z,o)))return null;
+    const idx=levelFor(feet);
+    const fZones=zonesByFloor[idx];
+    let area=null;
+    for(let i=0;i<fZones.length;i++){
+      const r=fZones[i];
+      if(near(r.y,feet)&&inRect(x,z,r)){area=r;break;}
+    }
+    if(!area)return null;
+    const fObs=obstaclesByFloor[idx];
+    for(let i=0;i<fObs.length;i++){
+      if(inRect(x,z,fObs[i]))return null;
+    }
     return area.y;
   }
   function sector({x,y,z}){
     const feet=y-1.58;
     if(x>=stairX && x<=outer && z>=hallBack && z<=hallFront)return 'East stair';
-    const area=zones.find(r=>near(r.y,feet)&&inRect(x,z,r));
-    return area?.name;
+    const fZones=zonesByFloor[levelFor(feet)];
+    for(let i=0;i<fZones.length;i++){
+      const r=fZones[i];
+      if(near(r.y,feet)&&inRect(x,z,r))return r.name;
+    }
+    return undefined;
   }
   // Begin on the intake floor, then offer the connected basement, records and roof.
   targets.sort((a,b)=>[0,-3.2,3.2,6.4].indexOf(a.y)-[0,-3.2,3.2,6.4].indexOf(b.y));
-  return {ground,sector,targets};
+  return {
+    ground,sector,targets,
+    groups:{floors:floorGroups,eastStair:eastStairGroup},
+    setFixturePulse:lights.setPulse
+  };
 }
